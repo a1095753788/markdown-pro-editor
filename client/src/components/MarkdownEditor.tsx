@@ -14,6 +14,8 @@ import FormulaInsertDialog from '@/components/FormulaInsertDialog';
 import ExamTemplateDialog from '@/components/ExamTemplateDialog';
 import AIChatWindow from '@/components/AIChatWindow';
 import ImageRecognitionDialog from '@/components/ImageRecognitionDialog';
+import FileManagerDialog from '@/components/FileManagerDialog';
+import QuestionFilterDialog from '@/components/QuestionFilterDialog';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useEditorStore } from '@/store/editorStore';
 import {
@@ -43,6 +45,7 @@ import {
   BookOpen,
   Sparkles,
   ImageIcon,
+  Filter,
 } from 'lucide-react';
 import 'highlight.js/styles/atom-one-light.css';
 import 'katex/dist/katex.min.css';
@@ -99,6 +102,8 @@ export default function MarkdownEditor() {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [imageRecognitionOpen, setImageRecognitionOpen] = useState(false);
   const [selectedText, setSelectedText] = useState<string>('');
+  const [fileManagerOpen, setFileManagerOpen] = useState(false);
+  const [questionFilterOpen, setQuestionFilterOpen] = useState(false);
 
   // 初始化编辑器内容
   useEffect(() => {
@@ -598,6 +603,22 @@ export default function MarkdownEditor() {
               title="图片识别"
             >
               <ImageIcon className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setFileManagerOpen(true)}
+              title="文件管理"
+            >
+              <FileText className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setQuestionFilterOpen(true)}
+              title="试题筛选"
+            >
+              <Filter className="w-4 h-4" />
             </Button>
             <Button
               variant="ghost"

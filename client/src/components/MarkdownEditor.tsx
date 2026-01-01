@@ -10,6 +10,8 @@ import SearchReplaceDialog from '@/components/SearchReplaceDialog';
 import DocumentOutline from '@/components/DocumentOutline';
 import StatisticsPanel from '@/components/StatisticsPanel';
 import KeyboardShortcutsDialog from '@/components/KeyboardShortcutsDialog';
+import FormulaInsertDialog from '@/components/FormulaInsertDialog';
+import ExamTemplateDialog from '@/components/ExamTemplateDialog';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useEditorStore } from '@/store/editorStore';
 import {
@@ -35,6 +37,8 @@ import {
   Sun,
   HelpCircle,
   FileJson,
+  Sigma,
+  BookOpen,
 } from 'lucide-react';
 import 'highlight.js/styles/atom-one-light.css';
 import 'katex/dist/katex.min.css';
@@ -86,6 +90,8 @@ export default function MarkdownEditor() {
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
+  const [formulaDialogOpen, setFormulaDialogOpen] = useState(false);
+  const [examTemplateDialogOpen, setExamTemplateDialogOpen] = useState(false);
 
   // 初始化编辑器内容
   useEffect(() => {
@@ -368,10 +374,25 @@ export default function MarkdownEditor() {
   }, [editorStore.content, state.fileName, state.printSettings]);
 
   const handleHeadingClick = useCallback((id: string) => {
-    // 这里可以实现跳转到对应标题的功能
-    // 目前仅作为占位符
     console.log('Clicked heading:', id);
   }, []);
+
+  const handleInsertFormula = useCallback((latex: string) => {
+    insertMarkdown(latex);
+  }, [insertMarkdown]);
+
+  const handleSelectTemplate = useCallback((content: string, templateName: string) => {
+    if (state.isDirty) {
+      if (!confirm('当前文档未保存，确定要使用模板吗？')) return;
+    }
+    editorStore.clearHistory();
+    editorStore.setContent(content);
+    setState((prev) => ({
+      ...prev,
+      fileName: templateName + '.md',
+      isDirty: false,
+    }));
+  }, [state.isDirty, editorStore]);
 
   const htmlContent = renderMarkdown(editorStore.content);
 
@@ -531,6 +552,22 @@ export default function MarkdownEditor() {
           <div className="flex-1" />
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setFormulaDialogOpen(true)}
+              title="插入公式"
+            >
+              <Sigma className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExamTemplateDialogOpen(true)}
+              title="试卷模板"
+            >
+              <BookOpen className="w-4 h-4" />
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -784,6 +821,18 @@ export default function MarkdownEditor() {
       <KeyboardShortcutsDialog
         open={shortcutsDialogOpen}
         onOpenChange={setShortcutsDialogOpen}
+      />
+
+      <FormulaInsertDialog
+        open={formulaDialogOpen}
+        onOpenChange={setFormulaDialogOpen}
+        onInsert={handleInsertFormula}
+      />
+
+      <ExamTemplateDialog
+        open={examTemplateDialogOpen}
+        onOpenChange={setExamTemplateDialogOpen}
+        onSelect={handleSelectTemplate}
       />
     </div>
   );

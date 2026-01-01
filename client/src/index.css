@@ -174,4 +174,121 @@
       max-width: 1280px; /* Standard content width */
     }
   }
+
+  /* Markdown 预览样式 */
+  .prose {
+    @apply text-foreground;
+  }
+
+  .prose h1 {
+    @apply text-3xl font-bold mt-6 mb-4;
+  }
+
+  .prose h2 {
+    @apply text-2xl font-bold mt-5 mb-3;
+  }
+
+  .prose h3 {
+    @apply text-xl font-bold mt-4 mb-2;
+  }
+
+  .prose h4,
+  .prose h5,
+  .prose h6 {
+    @apply font-bold mt-3 mb-2;
+  }
+
+  .prose p {
+    @apply my-4 leading-relaxed;
+  }
+
+  .prose ul,
+  .prose ol {
+    @apply my-4 ml-6;
+  }
+
+  .prose li {
+    @apply my-1;
+  }
+
+  .prose code {
+    @apply bg-muted text-foreground px-1.5 py-0.5 rounded font-mono text-sm;
+  }
+
+  .prose pre {
+    @apply bg-muted p-4 rounded-lg overflow-x-auto my-4;
+  }
+
+  .prose pre code {
+    @apply bg-transparent p-0 rounded-none;
+  }
+
+  .prose blockquote {
+    @apply border-l-4 border-primary pl-4 italic text-muted-foreground my-4;
+  }
+
+  .prose a {
+    @apply text-primary hover:underline;
+  }
+
+  .prose img {
+    @apply rounded-lg my-4 max-w-full;
+  }
+
+  .prose table {
+    @apply w-full border-collapse my-4;
+  }
+
+  .prose th,
+  .prose td {
+    @apply border border-border px-4 py-2;
+  }
+
+  .prose th {
+    @apply bg-muted font-bold;
+  }
+
+  /* KaTeX 样式优化 */
+  .katex {
+    @apply text-foreground;
+  }
+
+  .katex-display {
+    @apply my-4 overflow-x-auto;
+  }
+
+  /* 代码高亮样式 */
+  .hljs {
+    @apply bg-muted text-foreground;
+  }
+
+  .hljs-attr,
+  .hljs-attribute {
+    @apply text-blue-600;
+  }
+
+  .hljs-string {
+    @apply text-green-600;
+  }
+
+  .hljs-number {
+    @apply text-orange-600;
+  }
+
+  .hljs-literal {
+    @apply text-blue-600;
+  }
+
+  .hljs-type,
+  .hljs-class {
+    @apply text-purple-600;
+  }
+
+  .hljs-title {
+    @apply text-blue-600;
+  }
+
+  .hljs-params {
+    @apply text-foreground;
+  }
 }

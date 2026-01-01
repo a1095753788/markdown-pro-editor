@@ -12,6 +12,8 @@ import StatisticsPanel from '@/components/StatisticsPanel';
 import KeyboardShortcutsDialog from '@/components/KeyboardShortcutsDialog';
 import FormulaInsertDialog from '@/components/FormulaInsertDialog';
 import ExamTemplateDialog from '@/components/ExamTemplateDialog';
+import AIChatWindow from '@/components/AIChatWindow';
+import ImageRecognitionDialog from '@/components/ImageRecognitionDialog';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useEditorStore } from '@/store/editorStore';
 import {
@@ -39,6 +41,8 @@ import {
   FileJson,
   Sigma,
   BookOpen,
+  Sparkles,
+  ImageIcon,
 } from 'lucide-react';
 import 'highlight.js/styles/atom-one-light.css';
 import 'katex/dist/katex.min.css';
@@ -92,6 +96,9 @@ export default function MarkdownEditor() {
   const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
   const [formulaDialogOpen, setFormulaDialogOpen] = useState(false);
   const [examTemplateDialogOpen, setExamTemplateDialogOpen] = useState(false);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [imageRecognitionOpen, setImageRecognitionOpen] = useState(false);
+  const [selectedText, setSelectedText] = useState<string>('');
 
   // 初始化编辑器内容
   useEffect(() => {
@@ -394,6 +401,14 @@ export default function MarkdownEditor() {
     }));
   }, [state.isDirty, editorStore]);
 
+  const handleInsertImageText = useCallback((text: string) => {
+    insertMarkdown(text);
+  }, [insertMarkdown]);
+
+  const handleInsertImageFormula = useCallback((formula: string) => {
+    insertMarkdown(formula);
+  }, [insertMarkdown]);
+
   const htmlContent = renderMarkdown(editorStore.content);
 
   // 快捷键处理
@@ -567,6 +582,22 @@ export default function MarkdownEditor() {
               title="试卷模板"
             >
               <BookOpen className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setAiChatOpen(true)}
+              title="AI 助手"
+            >
+              <Sparkles className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setImageRecognitionOpen(true)}
+              title="图片识别"
+            >
+              <ImageIcon className="w-4 h-4" />
             </Button>
             <Button
               variant="ghost"
@@ -833,6 +864,20 @@ export default function MarkdownEditor() {
         open={examTemplateDialogOpen}
         onOpenChange={setExamTemplateDialogOpen}
         onSelect={handleSelectTemplate}
+      />
+
+      <AIChatWindow
+        open={aiChatOpen}
+        onOpenChange={setAiChatOpen}
+        selectedText={selectedText}
+      />
+
+      <ImageRecognitionDialog
+        open={imageRecognitionOpen}
+        onOpenChange={setImageRecognitionOpen}
+        modelConfig={null}
+        onInsertText={handleInsertImageText}
+        onInsertFormula={handleInsertImageFormula}
       />
     </div>
   );

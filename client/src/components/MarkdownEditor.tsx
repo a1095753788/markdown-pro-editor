@@ -1,9 +1,17 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { renderMarkdown } from '@/lib/markdown';
+import { exportToPDF } from '@/lib/pdfExport';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PrintSettingsDialog, { PrintSettings } from '@/components/PrintSettings';
 import FormatPanel, { FormatOptions } from '@/components/FormatPanel';
+import SearchReplaceDialog from '@/components/SearchReplaceDialog';
+import DocumentOutline from '@/components/DocumentOutline';
+import StatisticsPanel from '@/components/StatisticsPanel';
+import KeyboardShortcutsDialog from '@/components/KeyboardShortcutsDialog';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useEditorStore } from '@/store/editorStore';
 import {
   FileText,
   Save,
@@ -22,22 +30,30 @@ import {
   RotateCcw,
   Eye,
   EyeOff,
+  Search,
+  Moon,
+  Sun,
+  HelpCircle,
+  FileJson,
 } from 'lucide-react';
 import 'highlight.js/styles/atom-one-light.css';
 import 'katex/dist/katex.min.css';
 
 interface EditorState {
-  content: string;
   fileName: string;
   isDirty: boolean;
   previewVisible: boolean;
   printSettings: PrintSettings;
   formatOptions: FormatOptions;
+  showOutline: boolean;
+  showStatistics: boolean;
 }
 
 export default function MarkdownEditor() {
+  const { theme, toggleTheme } = useTheme();
+  const editorStore = useEditorStore();
+  
   const [state, setState] = useState<EditorState>({
-    content: '# 欢迎使用 Markdown Pro Editor\n\n开始编辑您的 Markdown 文档...\n\n## 支持的功能\n\n- 实时预览\n- 数学公式 (KaTeX)\n- 代码高亮\n- 自定义打印\n\n### 示例公式\n\n$$E = mc^2$$\n\n### 代码示例\n\n```javascript\nfunction hello() {\n  console.log("Hello, World!");\n}\n```',
     fileName: '未命名文档.md',
     isDirty: false,
     previewVisible: true,
@@ -60,37 +76,51 @@ export default function MarkdownEditor() {
       textColor: '#2c2c2c',
       backgroundColor: '#ffffff',
     },
+    showOutline: true,
+    showStatistics: false,
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const printContentRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false);
+  const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
 
-  const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setState((prev) => ({
-      ...prev,
-      content: e.target.value,
-      isDirty: true,
-    }));
+  // 初始化编辑器内容
+  useEffect(() => {
+    if (editorStore.content === '') {
+      editorStore.setContent(
+        '# 欢迎使用 Markdown Pro Editor\n\n开始编辑您的 Markdown 文档...\n\n## 支持的功能\n\n- 实时预览\n- 数学公式 (KaTeX)\n- 代码高亮\n- 自定义打印\n\n### 示例公式\n\n$$E = mc^2$$\n\n### 代码示例\n\n```javascript\nfunction hello() {\n  console.log("Hello, World!");\n}\n```'
+      );
+    }
   }, []);
 
+  const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    editorStore.setContent(e.target.value);
+    setState((prev) => ({
+      ...prev,
+      isDirty: true,
+    }));
+  }, [editorStore]);
+
   const insertMarkdown = useCallback((before: string, after: string = '') => {
-    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    const textarea = textareaRef.current;
     if (!textarea) return;
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const selectedText = state.content.substring(start, end) || '文本';
+    const selectedText = editorStore.content.substring(start, end) || '文本';
     const newContent =
-      state.content.substring(0, start) +
+      editorStore.content.substring(0, start) +
       before +
       selectedText +
       after +
-      state.content.substring(end);
+      editorStore.content.substring(end);
 
+    editorStore.setContent(newContent);
     setState((prev) => ({
       ...prev,
-      content: newContent,
       isDirty: true,
     }));
 
@@ -99,20 +129,20 @@ export default function MarkdownEditor() {
       textarea.selectionStart = start + before.length;
       textarea.selectionEnd = start + before.length + selectedText.length;
     }, 0);
-  }, [state.content]);
+  }, [editorStore]);
 
   const handleNewFile = useCallback(() => {
     if (state.isDirty) {
       if (!confirm('当前文档未保存，确定要新建吗？')) return;
     }
+    editorStore.clearHistory();
+    editorStore.setContent('');
     setState((prev) => ({
       ...prev,
-      content: '',
       fileName: '未命名文档.md',
       isDirty: false,
-      previewVisible: true,
     }));
-  }, [state.isDirty]);
+  }, [state.isDirty, editorStore]);
 
   const handleOpenFile = useCallback(() => {
     fileInputRef.current?.click();
@@ -125,20 +155,20 @@ export default function MarkdownEditor() {
     const reader = new FileReader();
     reader.onload = (event) => {
       const content = event.target?.result as string;
+      editorStore.clearHistory();
+      editorStore.setContent(content);
       setState((prev) => ({
         ...prev,
-        content,
         fileName: file.name,
         isDirty: false,
-        previewVisible: true,
       }));
     };
     reader.readAsText(file);
-  }, []);
+  }, [editorStore]);
 
   const handleSaveFile = useCallback(() => {
     const element = document.createElement('a');
-    const file = new Blob([state.content], { type: 'text/markdown' });
+    const file = new Blob([editorStore.content], { type: 'text/markdown' });
     element.href = URL.createObjectURL(file);
     element.download = state.fileName;
     document.body.appendChild(element);
@@ -149,7 +179,7 @@ export default function MarkdownEditor() {
       ...prev,
       isDirty: false,
     }));
-  }, [state.content, state.fileName]);
+  }, [editorStore.content, state.fileName]);
 
   const handleExportHTML = useCallback(() => {
     const html = `<!DOCTYPE html>
@@ -233,9 +263,9 @@ export default function MarkdownEditor() {
   </style>
 </head>
 <body>
-  ${renderMarkdown(state.content)}
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.27/dist/katex.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/highlight.min.js"></script>
+  ${renderMarkdown(editorStore.content)}
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.27/dist/katex.min.js"><\/script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/highlight.min.js"><\/script>
 </body>
 </html>`;
 
@@ -246,7 +276,16 @@ export default function MarkdownEditor() {
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
-  }, [state.content, state.fileName]);
+  }, [editorStore.content, state.fileName]);
+
+  const handleExportPDF = useCallback(async () => {
+    try {
+      const htmlContent = renderMarkdown(editorStore.content);
+      await exportToPDF(htmlContent, state.fileName);
+    } catch (error) {
+      alert('PDF 导出失败：' + (error instanceof Error ? error.message : '未知错误'));
+    }
+  }, [editorStore.content, state.fileName]);
 
   const handlePrint = useCallback(() => {
     const { paperSize, orientation, marginTop, marginRight, marginBottom, marginLeft, fontSize, lineHeight } = state.printSettings;
@@ -318,7 +357,7 @@ export default function MarkdownEditor() {
             </style>
           </head>
           <body>
-            ${renderMarkdown(state.content)}
+            ${renderMarkdown(editorStore.content)}
           </body>
           </html>
         `);
@@ -326,14 +365,92 @@ export default function MarkdownEditor() {
         printWindow.print();
       }
     }
-  }, [state.content, state.fileName, state.printSettings]);
+  }, [editorStore.content, state.fileName, state.printSettings]);
 
-  const handleUndo = useCallback(() => {
-    // 简单的撤销功能，实际项目中应使用更完善的历史记录系统
-    alert('撤销功能将在后续版本中实现');
+  const handleHeadingClick = useCallback((id: string) => {
+    // 这里可以实现跳转到对应标题的功能
+    // 目前仅作为占位符
+    console.log('Clicked heading:', id);
   }, []);
 
-  const htmlContent = renderMarkdown(state.content);
+  const htmlContent = renderMarkdown(editorStore.content);
+
+  // 快捷键处理
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key.toLowerCase()) {
+          case 'z':
+            e.preventDefault();
+            editorStore.undo();
+            break;
+          case 'y':
+            e.preventDefault();
+            editorStore.redo();
+            break;
+          case 'h':
+            e.preventDefault();
+            setSearchDialogOpen(true);
+            break;
+          case 'n':
+            e.preventDefault();
+            handleNewFile();
+            break;
+          case 'o':
+            e.preventDefault();
+            handleOpenFile();
+            break;
+          case 's':
+            e.preventDefault();
+            handleSaveFile();
+            break;
+          case 'p':
+            e.preventDefault();
+            setPrintDialogOpen(true);
+            break;
+          case 'b':
+            e.preventDefault();
+            insertMarkdown('**', '**');
+            break;
+          case 'i':
+            e.preventDefault();
+            insertMarkdown('*', '*');
+            break;
+          case '`':
+            e.preventDefault();
+            insertMarkdown('`', '`');
+            break;
+          case '1':
+            if (e.shiftKey) return;
+            e.preventDefault();
+            insertMarkdown('# ');
+            break;
+          case '2':
+            if (e.shiftKey) return;
+            e.preventDefault();
+            insertMarkdown('## ');
+            break;
+          case 'l':
+            e.preventDefault();
+            insertMarkdown('- ');
+            break;
+          case 'k':
+            e.preventDefault();
+            insertMarkdown('[', '](url)');
+            break;
+          case 'q':
+            e.preventDefault();
+            insertMarkdown('> ');
+            break;
+          default:
+            break;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editorStore, insertMarkdown, handleNewFile, handleOpenFile, handleSaveFile]);
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -386,8 +503,18 @@ export default function MarkdownEditor() {
               title="导出为 HTML"
               className="gap-2"
             >
-              <FileText className="w-4 h-4" />
-              导出 HTML
+              <FileJson className="w-4 h-4" />
+              HTML
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportPDF}
+              title="导出为 PDF"
+              className="gap-2"
+            >
+              <FileJson className="w-4 h-4" />
+              PDF
             </Button>
             <Button
               variant="outline"
@@ -399,6 +526,40 @@ export default function MarkdownEditor() {
               <Printer className="w-4 h-4" />
               打印
             </Button>
+          </div>
+
+          <div className="flex-1" />
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSearchDialogOpen(true)}
+              title="搜索和替换 (Ctrl+H)"
+              className="gap-2"
+            >
+              <Search className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleTheme}
+              title={theme === 'light' ? '切换到深色模式' : '切换到浅色模式'}
+            >
+              {theme === 'light' ? (
+                <Moon className="w-4 h-4" />
+              ) : (
+                <Sun className="w-4 h-4" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShortcutsDialogOpen(true)}
+              title="快捷键帮助"
+            >
+              <HelpCircle className="w-4 h-4" />
+            </Button>
             <FormatPanel
               options={state.formatOptions}
               onOptionsChange={(formatOptions) =>
@@ -407,9 +568,7 @@ export default function MarkdownEditor() {
             />
           </div>
 
-          <div className="flex-1" />
-
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground ml-4">
             {state.fileName}
             {state.isDirty && ' *'}
           </div>
@@ -504,8 +663,9 @@ export default function MarkdownEditor() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleUndo}
-            title="撤销"
+            onClick={() => editorStore.undo()}
+            disabled={!editorStore.canUndo()}
+            title="撤销 (Ctrl+Z)"
           >
             <RotateCcw className="w-4 h-4" />
           </Button>
@@ -530,12 +690,46 @@ export default function MarkdownEditor() {
         </div>
       </div>
 
-      {/* 编辑区和预览区 */}
+      {/* 编辑区、预览区和侧边栏 */}
       <div className="flex flex-1 overflow-hidden">
+        {/* 左侧侧边栏 */}
+        {(state.showOutline || state.showStatistics) && (
+          <div className="w-64 border-r border-border overflow-y-auto bg-card">
+            <Tabs defaultValue="outline" className="w-full">
+              <TabsList className="w-full rounded-none border-b border-border">
+                {state.showOutline && (
+                  <TabsTrigger value="outline" className="flex-1">
+                    大纲
+                  </TabsTrigger>
+                )}
+                {state.showStatistics && (
+                  <TabsTrigger value="statistics" className="flex-1">
+                    统计
+                  </TabsTrigger>
+                )}
+              </TabsList>
+              {state.showOutline && (
+                <TabsContent value="outline" className="m-0">
+                  <DocumentOutline
+                    content={editorStore.content}
+                    onHeadingClick={handleHeadingClick}
+                  />
+                </TabsContent>
+              )}
+              {state.showStatistics && (
+                <TabsContent value="statistics" className="m-0">
+                  <StatisticsPanel content={editorStore.content} />
+                </TabsContent>
+              )}
+            </Tabs>
+          </div>
+        )}
+
         {/* 编辑区 */}
         <div className="flex-1 flex flex-col border-r border-border">
           <Textarea
-            value={state.content}
+            ref={textareaRef}
+            value={editorStore.content}
             onChange={handleContentChange}
             placeholder="在这里输入 Markdown..."
             className="flex-1 resize-none border-0 rounded-none font-mono text-sm"
@@ -564,18 +758,33 @@ export default function MarkdownEditor() {
             />
           </div>
         )}
-
-        {/* 打印设置对话框 */}
-        <PrintSettingsDialog
-          open={printDialogOpen}
-          onOpenChange={setPrintDialogOpen}
-          settings={state.printSettings}
-          onSettingsChange={(printSettings) =>
-            setState((prev) => ({ ...prev, printSettings }))
-          }
-          onPrint={handlePrint}
-        />
       </div>
+
+      {/* 对话框 */}
+      <PrintSettingsDialog
+        open={printDialogOpen}
+        onOpenChange={setPrintDialogOpen}
+        settings={state.printSettings}
+        onSettingsChange={(printSettings) =>
+          setState((prev) => ({ ...prev, printSettings }))
+        }
+        onPrint={handlePrint}
+      />
+
+      <SearchReplaceDialog
+        open={searchDialogOpen}
+        onOpenChange={setSearchDialogOpen}
+        content={editorStore.content}
+        onReplace={(newContent) => {
+          editorStore.setContent(newContent);
+          setState((prev) => ({ ...prev, isDirty: true }));
+        }}
+      />
+
+      <KeyboardShortcutsDialog
+        open={shortcutsDialogOpen}
+        onOpenChange={setShortcutsDialogOpen}
+      />
     </div>
   );
 }

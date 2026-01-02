@@ -32,23 +32,23 @@ export default function OfflineDownloadDialog({
     setDownloading(true);
     try {
       // 下载完整的离线包（ZIP 文件）
-      const response = await fetch('/offline-package.zip');
+      const response = await fetch('/Markdown-Pro-Editor-离线版本.zip');
       if (!response.ok) {
-        throw new Error('离线包下载失败');
+        throw new Error('离线包下载失败，请稍后重试');
       }
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'Markdown-Pro-Editor-完整离线版本.zip';
+      link.download = 'Markdown-Pro-Editor-离线版本.zip';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      toast.success('离线版本下载完成！请解压后用浏览器打开 index.html');
+      toast.success('离线版本下载完成！\n\n使用步骤：\n1. 解压文件夹\n2. 用浏览器打开 index.html\n3. 开始使用！');
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '下载失败');
+      toast.error(error instanceof Error ? error.message : '下载失败，请检查网络连接');
     } finally {
       setDownloading(false);
     }
@@ -147,7 +147,7 @@ export default function OfflineDownloadDialog({
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Button
                 onClick={handleDownloadOffline}
                 disabled={downloading}
@@ -155,11 +155,17 @@ export default function OfflineDownloadDialog({
                 size="lg"
               >
                 <Download className="w-4 h-4 mr-2" />
-                {downloading ? '下载中...' : '下载完整离线包 (6.3MB)'}
+                {downloading ? '下载中...' : '下载离线版本 (6.3MB)'}
               </Button>
-              <p className="text-xs text-gray-500 text-center">
-                包含所有功能，完全离线使用，无需任何依赖
-              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-900">
+                <p className="font-semibold mb-2">✓ 完整功能离线版本</p>
+                <ul className="space-y-1 text-xs">
+                  <li>• 包含所有功能（编辑、试卷、AI 等）</li>
+                  <li>• 完全离线运行，无需网络</li>
+                  <li>• 解压后直接打开 index.html 使用</li>
+                  <li>• 所有数据保存在本地浏览器</li>
+                </ul>
+              </div>
             </div>
           </TabsContent>
 

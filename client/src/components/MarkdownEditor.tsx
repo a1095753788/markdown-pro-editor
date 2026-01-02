@@ -16,6 +16,9 @@ import AIChatWindow from '@/components/AIChatWindow';
 import ImageRecognitionDialog from '@/components/ImageRecognitionDialog';
 import FileManagerDialog from '@/components/FileManagerDialog';
 import QuestionFilterDialog from '@/components/QuestionFilterDialog';
+import DocumentConversionDialog from '@/components/DocumentConversionDialog';
+import ImageInsertDialog from '@/components/ImageInsertDialog';
+import QuestionBankDialog from '@/components/QuestionBankDialog';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useEditorStore } from '@/store/editorStore';
 import {
@@ -46,6 +49,9 @@ import {
   Sparkles,
   ImageIcon,
   Filter,
+  FileUp,
+  Image as ImageIcon2,
+  Database,
 } from 'lucide-react';
 import 'highlight.js/styles/atom-one-light.css';
 import 'katex/dist/katex.min.css';
@@ -104,6 +110,9 @@ export default function MarkdownEditor() {
   const [selectedText, setSelectedText] = useState<string>('');
   const [fileManagerOpen, setFileManagerOpen] = useState(false);
   const [questionFilterOpen, setQuestionFilterOpen] = useState(false);
+  const [documentConversionOpen, setDocumentConversionOpen] = useState(false);
+  const [imageInsertOpen, setImageInsertOpen] = useState(false);
+  const [questionBankOpen, setQuestionBankOpen] = useState(false);
 
   // 初始化编辑器内容
   useEffect(() => {
@@ -899,6 +908,37 @@ export default function MarkdownEditor() {
         modelConfig={null}
         onInsertText={handleInsertImageText}
         onInsertFormula={handleInsertImageFormula}
+      />
+
+      <DocumentConversionDialog
+        open={documentConversionOpen}
+        onOpenChange={setDocumentConversionOpen}
+        onConversionComplete={(result) => {
+          editorStore.setContent(result.markdown);
+          setState((prev) => ({
+            ...prev,
+            fileName: result.fileName,
+          }));
+        }}
+      />
+
+      <ImageInsertDialog
+        open={imageInsertOpen}
+        onOpenChange={setImageInsertOpen}
+        onInsertImage={(markdown) => {
+          insertMarkdown(markdown);
+        }}
+      />
+
+      <QuestionBankDialog
+        open={questionBankOpen}
+        onOpenChange={setQuestionBankOpen}
+        onGenerateExam={(questions) => {
+          const markdown = questions
+            .map((q, i) => `## 题目 ${i + 1}\n\n${q.content}\n\n分值: ${q.score}分\n\n`)
+            .join('---\n\n');
+          insertMarkdown(markdown);
+        }}
       />
     </div>
   );

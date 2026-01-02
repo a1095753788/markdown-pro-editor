@@ -31,8 +31,21 @@ export default function OfflineDownloadDialog({
   const handleDownloadOffline = async () => {
     setDownloading(true);
     try {
-      await downloadOfflineVersion();
-      toast.success('离线版本下载完成！');
+      // 下载完整的离线包（ZIP 文件）
+      const response = await fetch('/offline-package.zip');
+      if (!response.ok) {
+        throw new Error('离线包下载失败');
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'Markdown-Pro-Editor-完整离线版本.zip';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success('离线版本下载完成！请解压后用浏览器打开 index.html');
       onOpenChange(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '下载失败');
@@ -134,15 +147,20 @@ export default function OfflineDownloadDialog({
               </div>
             </div>
 
-            <Button
-              onClick={handleDownloadOffline}
-              disabled={downloading}
-              className="w-full"
-              size="lg"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              {downloading ? '下载中...' : '下载离线版本'}
-            </Button>
+            <div className="space-y-2">
+              <Button
+                onClick={handleDownloadOffline}
+                disabled={downloading}
+                className="w-full"
+                size="lg"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                {downloading ? '下载中...' : '下载完整离线包 (6.3MB)'}
+              </Button>
+              <p className="text-xs text-gray-500 text-center">
+                包含所有功能，完全离线使用，无需任何依赖
+              </p>
+            </div>
           </TabsContent>
 
           <TabsContent value="info" className="space-y-4">

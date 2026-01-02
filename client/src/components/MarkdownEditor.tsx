@@ -19,6 +19,8 @@ import QuestionFilterDialog from '@/components/QuestionFilterDialog';
 import DocumentConversionDialog from '@/components/DocumentConversionDialog';
 import ImageInsertDialog from '@/components/ImageInsertDialog';
 import QuestionBankDialog from '@/components/QuestionBankDialog';
+import ExportTemplateDialog from '@/components/ExportTemplateDialog';
+import OfflineDownloadDialog from '@/components/OfflineDownloadDialog';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useEditorStore } from '@/store/editorStore';
 import {
@@ -52,6 +54,8 @@ import {
   FileUp,
   Image as ImageIcon2,
   Database,
+  Download as DownloadIcon,
+  Settings,
 } from 'lucide-react';
 import 'highlight.js/styles/atom-one-light.css';
 import 'katex/dist/katex.min.css';
@@ -113,6 +117,8 @@ export default function MarkdownEditor() {
   const [documentConversionOpen, setDocumentConversionOpen] = useState(false);
   const [imageInsertOpen, setImageInsertOpen] = useState(false);
   const [questionBankOpen, setQuestionBankOpen] = useState(false);
+  const [exportTemplateOpen, setExportTemplateOpen] = useState(false);
+  const [offlineDownloadOpen, setOfflineDownloadOpen] = useState(false);
 
   // 初始化编辑器内容
   useEffect(() => {
@@ -658,6 +664,22 @@ export default function MarkdownEditor() {
             >
               <HelpCircle className="w-4 h-4" />
             </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExportTemplateOpen(true)}
+              title="导出模板定制"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setOfflineDownloadOpen(true)}
+              title="离线版本下载"
+            >
+              <DownloadIcon className="w-4 h-4" />
+            </Button>
             <FormatPanel
               options={state.formatOptions}
               onOptionsChange={(formatOptions) =>
@@ -939,6 +961,20 @@ export default function MarkdownEditor() {
             .join('---\n\n');
           insertMarkdown(markdown);
         }}
+      />
+
+      <ExportTemplateDialog
+        open={exportTemplateOpen}
+        onOpenChange={setExportTemplateOpen}
+        content={editorStore.content}
+        onExport={(template, content) => {
+          console.log('导出模板:', template);
+        }}
+      />
+
+      <OfflineDownloadDialog
+        open={offlineDownloadOpen}
+        onOpenChange={setOfflineDownloadOpen}
       />
     </div>
   );
